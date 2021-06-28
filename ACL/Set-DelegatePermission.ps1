@@ -9,7 +9,7 @@
   Services and Lightweight Directory Services Tools).
   Script need import as module with cmdlet Import-Module
   (Import-Module .\Set-DelegatePermission.ps1).
-  See examples for more detailer information for using.
+  See examples for more detailed information for using.
 
   .PARAMETER OU
   Organizational Unit on which setting permissions (format: DistinguishedName)
