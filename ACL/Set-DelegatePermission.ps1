@@ -11,8 +11,8 @@
   (Import-Module .\Set-DelegatePermission.ps1).
   See examples for more detailed information for using.
 
-  .PARAMETER OU
-  Organizational Unit on which setting permissions (format: DistinguishedName)
+  .PARAMETER ADObject
+  Object of Active Directory on which setting permissions (format: DistinguishedName)
 
   .PARAMETER Principal
   Principal (generally group or user) to whom want to delegate control
@@ -36,23 +36,27 @@
 
   .EXAMPLE
   # Granting Full Control permissions for group for children objects user class
-  Set-DelegatePermission -OU <OU_DN> -Principal <GROUP_NAME> -Rights GenericAll -InheritanceType Children -InheritedObjectType User
+  Set-DelegatePermission -ADObject <DN> -Principal <GROUP_NAME> -Rights GenericAll -InheritanceType Children -InheritedObjectType User
 
   .EXAMPLE
-  # Granting permissions for group for delete and create computer accounts in <OU_DN> and all his children
-  Set-DelegatePermission -OU <OU_DN> -Principal <GROUP_NAME> -Rights "CreateChild","DeleteChild" `
+  # Granting permissions for group for delete and create computer accounts in <DN> and all his children
+  Set-DelegatePermission -ADObject <DN> -Principal <GROUP_NAME> -Rights "CreateChild","DeleteChild" `
                          -ObjectType "Computer" -InheritanceType "All" -InheritedObjectType "OrganizationalUnit"
 
   .EXAMPLE
-  # Granting permissions for group for change membership of groups in <OU_DN> and all his children of group class
-  Set-DelegatePermission -OU <OU_DN> -Principal <GROUP_NAME> -Rights "WriteProperty" `
+  # Granting permissions for group for change membership of groups in <DN> and all his children of group class
+  Set-DelegatePermission -ADObject <DN> -Principal <GROUP_NAME> -Rights "WriteProperty" `
                          -ObjectType "Member" -InheritanceType "Descendents" -InheritedObjectType "Group"
 
   .EXAMPLE
   # Example of ACL settings for LAPS: granting for computer accounts for read and write to ms-MCS-AdmPwdExpirationTime self attribute
-  Set-DelegatePermission -OU <OU_DN> -Principal "SELF" -Rights "ReadProperty","WriteProperty" `
+  Set-DelegatePermission -ADObject <DN> -Principal "SELF" -Rights "ReadProperty","WriteProperty" `
                          -ObjectType "ms-MCS-AdmPwdExpirationTime" -InheritanceType "Descendents" `
                          -InheritedObjectType "Computer"
+
+  .EXAMPLE
+  # Permission on changing userAccountControl attribute of <DN> for <PRINCIPAL>
+  Set-DelegatePermission -ADObject <DN> -Principal <PRINCIPAL> -Rights "ReadProperty","WriteProperty" -ObjectType "userAccountControl" -InheritanceType "None"
 
   .LINK
   https://docs.microsoft.com/en-us/dotnet/api/system.directoryservices.activedirectoryaccessrule.-ctor
@@ -65,7 +69,7 @@ function Set-DelegatePermission {
 
     param (
         [Parameter (Mandatory=$true, Position=0)]
-        [string]$OU,
+        [string]$ADObject,
         [Parameter (Mandatory=$true, Position=1)]
         [string]$Principal,
         [Parameter (Mandatory=$true, Position=2)]
@@ -93,7 +97,7 @@ function Set-DelegatePermission {
     Import-Module ActiveDirectory
 
     try {
-        $acl = Get-Acl "AD:$OU"
+        $acl = Get-Acl "AD:$ADObject"
     } catch {
         Write-Host $Error[0].Exception.Message -ForegroundColor Red
         break
@@ -149,7 +153,7 @@ function Set-DelegatePermission {
     }
 
     Write-Host
-    Write-Host 'OrganizationalUnit :', $OU -ForegroundColor Green
+    Write-Host 'AD Object :', $ADObject -ForegroundColor Green
     Write-Host
     Write-Host '1. [System.Security.Principal.IdentityReference] : ', $identity
     Write-Host '2. [System.DirectoryServices.ActiveDirectoryRights] : ', $_rights
@@ -167,6 +171,6 @@ function Set-DelegatePermission {
                                                                      $_inheritedObjectType)
 
     $acl.AddAccessRule($ace)
-    Set-Acl -AclObject $acl "AD:$OU"
+    Set-Acl -AclObject $acl "AD:$ADObject"
 
 }
